@@ -1,4 +1,4 @@
-/**
+/*
  * Need for Speed: Most Wanted (2012) Discord Rich Presence Plugin
  * 
  * Author: rancol347

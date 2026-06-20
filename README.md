@@ -9,4 +9,4 @@ A lightweight C++ ASI plugin that integrates Discord Rich Presence into Need for
 * **Open Source**: Full source code provided to ensure safety and transparency.
 
 ## Installation
-Place the compiled `.asi` file into your game's root directory or `scripts` folder.
+Place the compiled `.asi` file into your game's `scripts` folder.  and `.dll` files into game root directory

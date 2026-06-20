@@ -22,13 +22,34 @@ time_t g_StartTime = 0; // Неубиваемый таймер на базе tim
 // --- НАСТРОЙКИ ПАМЯТИ ИГРЫ (ОФФСЕТЫ) ---
 static const uintptr_t lobbyBaseOffset = 0x00DA69E8;
 static const unsigned int lobbyOffsets[] = { 0x64C };
-
-// 1. Обновляем базовый адрес (берём стабильный из поинтермапа)
-static const uintptr_t pursuitScoreBase = 0x00D0FD08;
-static const unsigned int pursuitScoreOffsets[] = { 0x8, 0x8, 0x10, 0xC4, 0x1C, 0x24, 0xB4 };
+static const uintptr_t heatBaseOffset = 0x00D0FD08;
+static const unsigned int heatOffsets[] = { 0x8, 0x8, 0x10, 0x13C, 0x3E8 };
+static const int heatOffsetsCount = 5;
 
 static const uintptr_t carIdBase = 0x00D0FD08;
 static const unsigned int carIdOffsets[] = { 0x8, 0x50, 0x308, 0x18 };
+
+float SafeReadFloatChain(uintptr_t baseOffset, const unsigned int offsets[], int count) {
+    uintptr_t hModule = (uintptr_t)GetModuleHandle(NULL);
+    if (!hModule) return 0.0f;
+
+    uintptr_t currentAddr = hModule + baseOffset;
+
+    for (int i = 0; i < count; i++) {
+        uintptr_t nextAddr = 0;
+        if (!ReadProcessMemory(GetCurrentProcess(), (LPCVOID)currentAddr, &nextAddr, sizeof(nextAddr), NULL)) {
+            return 0.0f;
+        }
+        currentAddr = nextAddr + offsets[i];
+    }
+
+    float finalValue = 0.0f;
+    if (ReadProcessMemory(GetCurrentProcess(), (LPCVOID)currentAddr, &finalValue, sizeof(finalValue), NULL)) {
+        return finalValue;
+    }
+
+    return 0.0f;
+}
 
 int SafeReadIntChain(uintptr_t baseOffset, const unsigned int offsets[], int count) {
     uintptr_t hModule = (uintptr_t)GetModuleHandle(NULL);
@@ -184,7 +205,7 @@ void UpdatePresence() {
 
     // Читаем режим игры и очки погони через базовую рабочую функцию
     int lobbyStatus = SafeReadIntChain(lobbyBaseOffset, lobbyOffsets, lobbyOffsetsCount);
-    int pursuitScore = SafeReadIntChain(pursuitScoreBase, pursuitScoreOffsets, scoreOffsetsCount);
+    float rawHeat = SafeReadFloatChain(heatBaseOffset, heatOffsets, heatOffsetsCount);
 
     // Читаем адрес структуры машины
     uintptr_t carStructAddr = SafeReadIntChain(carIdBase, carIdOffsets, carIdOffsetsCount);
@@ -216,64 +237,63 @@ void UpdatePresence() {
     static std::string staticDetails;
     static std::string staticLargeText;
 
-    // 2. Логика отображения статусов (В погоне / Свободная езда)
-    if (pursuitScore > 0 && lobbyStatus == 1) {
-        // Форматируем строку в зависимости от языка
-        if (isRussian) {
-            staticDetails = "В погоне (SP: " + std::to_string(pursuitScore) + ") на " + carName + "";
-            staticLargeText = "Удирает от копов!";
-        }
-        else {
-            staticDetails = "In Pursuit (SP: " + std::to_string(pursuitScore) + ") on " + carName + "";
-            staticLargeText = "Evading the cops!";
-        }
-        discordPresence.details = staticDetails.c_str();
-        discordPresence.largeImageText = staticLargeText.c_str();
+    // Читаем текущее дробное значение погони
+    rawHeat = SafeReadFloatChain(heatBaseOffset, heatOffsets, heatOffsetsCount);
+    int heatLevel = 0;
+
+    // Переводим флоат в уровень розыска по твоей таблице Cheat Engine
+    if (rawHeat >= 0.1f) {
+        if (rawHeat < 2.0f)        heatLevel = 1;
+        else if (rawHeat < 8.0f)   heatLevel = 2;
+        else if (rawHeat < 16.0f)  heatLevel = 3;
+        else if (rawHeat < 26.0f)  heatLevel = 4;
+        else if (rawHeat < 38.0f)  heatLevel = 5;
+        else                       heatLevel = 6;
     }
-    else if (lobbyStatus > 1) {
-        if (isRussian) {
-            staticDetails = "Катается в мультиплеере на " + carName;
-            staticLargeText = "В сетевой сессии";
+
+    // ЛОГИКА ВЫВОДА В ДИСКОРД
+    if (lobbyStatus == 1) { // Одиночная игра
+        if (heatLevel > 0) {
+            // Если идет погоня (уровень больше 0)
+            if (isRussian) {
+                staticDetails = "В погоне (HEAT: " + std::to_string(heatLevel) + ") на " + carName;
+                staticLargeText = "Удирает от копов!";
+            }
+            else {
+                staticDetails = "In Pursuit (HEAT: " + std::to_string(heatLevel) + ") on " + carName;
+                staticLargeText = "Evading the cops!";
+            }
         }
         else {
-            staticDetails = "Racing in multiplayer on " + carName;
-            staticLargeText = "In Online Session";
-        }
-        discordPresence.details = staticDetails.c_str();
-        discordPresence.largeImageText = staticLargeText.c_str();
-    }
-    else {
-        if (isRussian) {
-            staticDetails = "Катается по городу на " + carName;
-            staticLargeText = "Fairhaven City";
-        }
-        else {
-            staticDetails = "Cruising Fairhaven on " + carName;
-            staticLargeText = "Fairhaven City";
+            // Если погони нет (rawHeat == 0), плагин моментально вернет свободную езду!
+            if (isRussian) {
+                staticDetails = "Катается по городу на " + carName;
+                staticLargeText = "Fairhaven City";
+            }
+            else {
+                staticDetails = "Cruising Fairhaven on " + carName;
+                staticLargeText = "Fairhaven City";
+            }
         }
         discordPresence.details = staticDetails.c_str();
         discordPresence.largeImageText = staticLargeText.c_str();
     }
 
 
-    // Создаем переменные, которые будут помнить прошлые значения
-    static int lastScore = -1;
+    // Создаем статические переменные для отслеживания изменений HEAT, лобби и машины
+    static int lastHeat = -1;
     static int lastLobby = -1;
     static std::string lastCar = "";
-    static ULONGLONG lastUpdateTime = 0;
-    ULONGLONG currentTime = GetTickCount64();
 
-    // Проверяем: если хоть что-то изменилось, только ТОГДА отправляем обновление в Дискорд
-    if ((pursuitScore != lastScore && currentTime - lastUpdateTime >= 15000) || lobbyStatus != lastLobby || carName != lastCar) {
+    // Если изменился уровень копов, режим игры или машина — мгновенно обновляем Дискорд!
+    if (heatLevel != lastHeat || lobbyStatus != lastLobby || carName != lastCar) {
 
         Discord_UpdatePresence(&discordPresence);
 
-        // Запоминаем новые значения как прошлые для следующего круга
-        lastScore = pursuitScore;
+        // Запоминаем новые значения
+        lastHeat = heatLevel;
         lastLobby = lobbyStatus;
         lastCar = carName;
-        lastUpdateTime = currentTime;
-
     }
 }
 

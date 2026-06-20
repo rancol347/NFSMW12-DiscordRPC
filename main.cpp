@@ -1,3 +1,11 @@
+/**
+ * Need for Speed: Most Wanted (2012) Discord Rich Presence Plugin
+ * 
+ * Author: rancol347
+ * Version: 1.0
+ * 
+ * GitHub: https://github.com/rancol347/NFSMW12-DiscordRPC/
+ */
 #include <windows.h>
 #include <iostream>
 #include <thread>

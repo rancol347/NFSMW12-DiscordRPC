@@ -256,7 +256,25 @@ void UpdatePresence() {
     }
 
 
-    Discord_UpdatePresence(&discordPresence);
+    // Создаем переменные, которые будут помнить прошлые значения
+    static int lastScore = -1;
+    static int lastLobby = -1;
+    static std::string lastCar = "";
+    static ULONGLONG lastUpdateTime = 0;
+    ULONGLONG currentTime = GetTickCount64();
+
+    // Проверяем: если хоть что-то изменилось, только ТОГДА отправляем обновление в Дискорд
+    if ((pursuitScore != lastScore && currentTime - lastUpdateTime >= 15000) || lobbyStatus != lastLobby || carName != lastCar) {
+
+        Discord_UpdatePresence(&discordPresence);
+
+        // Запоминаем новые значения как прошлые для следующего круга
+        lastScore = pursuitScore;
+        lastLobby = lobbyStatus;
+        lastCar = carName;
+        lastUpdateTime = currentTime;
+
+    }
 }
 
 DWORD WINAPI MainThread(LPVOID lpParam) {

@@ -260,7 +260,7 @@ void UpdatePresence() {
                 staticLargeText = "Удирает от копов!";
             }
             else {
-                staticDetails = "In Pursuit (HEAT: " + std::to_string(heatLevel) + ") on " + carName;
+                staticDetails = "In Pursuit (HEAT: " + std::to_string(heatLevel) + ") in " + carName;
                 staticLargeText = "Evading the cops!";
             }
             discordPresence.details = staticDetails.c_str();
@@ -273,7 +273,7 @@ void UpdatePresence() {
                 staticLargeText = "Fairhaven City";
             }
             else {
-                staticDetails = "Cruising Fairhaven on " + carName;
+                staticDetails = "Cruising Fairhaven in " + carName;
                 staticLargeText = "Fairhaven City";
             }
         }
@@ -286,7 +286,7 @@ void UpdatePresence() {
             staticLargeText = "В сетевой сессии";
         }
         else {
-            staticDetails = "Dominated the online session on " + carName;
+            staticDetails = "Dominating the online session in " + carName;
             staticLargeText = "In Online Session";
         }
         discordPresence.details = staticDetails.c_str();

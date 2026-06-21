@@ -266,18 +266,6 @@ void UpdatePresence() {
             discordPresence.details = staticDetails.c_str();
             discordPresence.largeImageText = staticLargeText.c_str();
         }
-        else if (lobbyStatus > 1) {
-            if (isRussian) {
-                staticDetails = "Катается в мультиплеере на " + carName;
-                staticLargeText = "В сетевой сессии";
-            }
-            else {
-                staticDetails = "Racing in multiplayer on " + carName;
-                staticLargeText = "In Online Session";
-            }
-            discordPresence.details = staticDetails.c_str();
-            discordPresence.largeImageText = staticLargeText.c_str();
-        }
         else {
             // Если погони нет (rawHeat == 0), плагин моментально вернет свободную езду!
             if (isRussian) {
@@ -292,7 +280,18 @@ void UpdatePresence() {
         discordPresence.details = staticDetails.c_str();
         discordPresence.largeImageText = staticLargeText.c_str();
     }
-
+    else if (lobbyStatus > 1) {
+        if (isRussian) {
+            staticDetails = "Покоряет онлайн-сессию на " + carName;
+            staticLargeText = "В сетевой сессии";
+        }
+        else {
+            staticDetails = "Dominated the online session on " + carName;
+            staticLargeText = "In Online Session";
+        }
+        discordPresence.details = staticDetails.c_str();
+        discordPresence.largeImageText = staticLargeText.c_str();
+    }
 
     // Создаем статические переменные для отслеживания изменений HEAT, лобби и машины
     static int lastHeat = -1;

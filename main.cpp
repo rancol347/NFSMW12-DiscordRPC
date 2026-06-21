@@ -263,6 +263,20 @@ void UpdatePresence() {
                 staticDetails = "In Pursuit (HEAT: " + std::to_string(heatLevel) + ") on " + carName;
                 staticLargeText = "Evading the cops!";
             }
+            discordPresence.details = staticDetails.c_str();
+            discordPresence.largeImageText = staticLargeText.c_str();
+        }
+        else if (lobbyStatus > 1) {
+            if (isRussian) {
+                staticDetails = "Катается в мультиплеере на " + carName;
+                staticLargeText = "В сетевой сессии";
+            }
+            else {
+                staticDetails = "Racing in multiplayer on " + carName;
+                staticLargeText = "In Online Session";
+            }
+            discordPresence.details = staticDetails.c_str();
+            discordPresence.largeImageText = staticLargeText.c_str();
         }
         else {
             // Если погони нет (rawHeat == 0), плагин моментально вернет свободную езду!

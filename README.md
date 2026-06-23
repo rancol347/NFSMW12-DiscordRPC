@@ -7,11 +7,12 @@
 A lightweight C++ ASI plugin that expands Discord Rich Presence for Need for Speed: Most Wanted (2012).
 
 ## Features
-* **Dynamic Content**: Displays your current car model, lobby status, and active heat level (HEAT 1-6).
+* **Dynamic Content**: Real-time tracking of current car model, lobby status, and heat level (1-6).
 * **Smart Localization**: Automatically toggles between English and Russian based on your Windows system language..
 * **Open Source**: Full source code provided to ensure safety and transparency.
 
-* **Upd. 1.1**: Added display of the ToD when hovering over the game icon
+## Changelog
+* **v1.1 (Update)**: Added dynamic Time of Day (ToD) display in the Rich Presence status.
 
 ## Installation
 Place the `.asi` file into your game's `scripts` folder, and `.dll` files into the game's root directory.
@@ -23,11 +24,12 @@ Place the `.asi` file into your game's `scripts` folder, and `.dll` files into t
 Легковесный C++ ASI-плагин, который расширяет возможности Discord Rich Presence для Need for Speed: Most Wanted (2012).
 
 ## Особенности
-* **Динамический контент**: Отображает вашу текущую машину, режим игры и текущий уровень погони (HEAT 1-6).
+* **Динамический контент**: Отслеживает вашу текущую машину, режим игры и текущий уровень погони (HEAT 1-6) в реальном времени.
 * **Умная локализация**: Автоматически переключается между английским и русским языками в зависимости от языка интерфейса вашей Windows.
 * **Открытый исходный код**: Полный исходный код предоставлен для гарантии безопасности и прозрачности.
 
-* **Upd. 1.1**: Добавлено отображение времени суток при наведении на иконку игры
+## История Обновлений
+* **v1.1 (Update)**: Добавлено динамическое отображение времени суток в статусе
 
 ## Установка
 Переместите `.asi` в папку `scripts` игры, а файлы `.dll` — в корень игры.

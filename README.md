@@ -7,15 +7,21 @@
 A lightweight C++ ASI plugin that expands Discord Rich Presence for Need for Speed: Most Wanted (2012).
 
 ## Features
-* **Dynamic Content**: Real-time tracking of current car model, lobby status, and heat level (1-6).
-* **Smart Localization**: Automatically toggles between English and Russian based on your Windows system language..
-* **Open Source**: Full source code provided to ensure safety and transparency.
+
+* **Dynamic Presence**: Automatically displays your current car, game mode, and Heat level (1–6).
+* **Smart Localization**: Seamlessly switches between English and Russian based on your system language.
+* **Real-time Tracking**: Updates your status, including the current Time of Day, without delay.
+* **Open Source**: Fully transparent and safe code.
 
 ## Changelog
-* **v1.1 (Update)**: Added dynamic Time of Day (ToD) display in the Rich Presence status.
+
+* **v1.1**: Added dynamic Time of Day (ToD) display in the Rich Presence status.
 
 ## Installation
-Place the `.asi` file into your game's `scripts` folder, and `.dll` files into the game's root directory.
+
+1. Extract the contents of the archive directly into your game's root directory.
+2. The archive includes the required ASI Loader, so no additional setup is needed.
+3. Run the game.
 
 ---
 
@@ -24,12 +30,18 @@ Place the `.asi` file into your game's `scripts` folder, and `.dll` files into t
 Легковесный C++ ASI-плагин, который расширяет возможности Discord Rich Presence для Need for Speed: Most Wanted (2012).
 
 ## Особенности
-* **Динамический контент**: Отслеживает вашу текущую машину, режим игры и текущий уровень погони (HEAT 1-6) в реальном времени.
-* **Умная локализация**: Автоматически переключается между английским и русским языками в зависимости от языка интерфейса вашей Windows.
-* **Открытый исходный код**: Полный исходный код предоставлен для гарантии безопасности и прозрачности.
 
-## История Обновлений
-* **v1.1 (Update)**: Добавлено динамическое отображение времени суток в статусе
+* **Динамический контент**: Отображает вашу текущую машину, режим игры и уровень погони (HEAT 1-6).
+* **Умная локализация**: Автоматически переключается между английским и русским языками в зависимости от настроек вашей Windows.
+* **Отслеживание в реальном времени**: Статус обновляется без задержек, включая текущее время суток.
+* **Открытый исходный код**: Полная прозрачность и безопасность.
+
+## История обновлений
+
+* **v1.1**: Добавлено отображение времени суток в статусе Discord.
 
 ## Установка
-Переместите `.asi` в папку `scripts` игры, а файлы `.dll` — в корень игры.
+
+1. Распакуйте содержимое архива в корневую папку игры.
+2. В архиве уже есть необходимый ASI Loader, поэтому дополнительных настроек не требуется.
+3. Запустите игру.

@@ -11,6 +11,8 @@ A lightweight C++ ASI plugin that expands Discord Rich Presence for Need for Spe
 * **Smart Localization**: Automatically toggles between English and Russian based on your Windows system language..
 * **Open Source**: Full source code provided to ensure safety and transparency.
 
+* **Upd. 1.1**: Added display of the ToD when hovering over the game icon
+
 ## Installation
 Place the `.asi` file into your game's `scripts` folder, and `.dll` files into the game's root directory.
 
@@ -24,6 +26,8 @@ Place the `.asi` file into your game's `scripts` folder, and `.dll` files into t
 * **Динамический контент**: Отображает вашу текущую машину, режим игры и текущий уровень погони (HEAT 1-6).
 * **Умная локализация**: Автоматически переключается между английским и русским языками в зависимости от языка интерфейса вашей Windows.
 * **Открытый исходный код**: Полный исходный код предоставлен для гарантии безопасности и прозрачности.
+
+* **Upd. 1.1**: Добавлено отображение времени суток при наведении на иконку игры
 
 ## Установка
 Переместите `.asi` в папку `scripts` игры, а файлы `.dll` — в корень игры.

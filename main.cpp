@@ -22,6 +22,7 @@ time_t g_StartTime = 0; // Неубиваемый таймер на базе tim
 // --- НАСТРОЙКИ ПАМЯТИ ИГРЫ (ОФФСЕТЫ) ---
 static const uintptr_t lobbyBaseOffset = 0x00DA69E8;
 static const unsigned int lobbyOffsets[] = { 0x64C };
+
 static const uintptr_t heatBaseOffset = 0x00D0FD08;
 static const unsigned int heatOffsets[] = { 0x8, 0x8, 0x10, 0x13C, 0x3E8 };
 static const int heatOffsetsCount = 5;
@@ -29,6 +30,11 @@ static const int heatOffsetsCount = 5;
 static const uintptr_t carIdBase = 0x00D0FD08;
 static const unsigned int carIdOffsets[] = { 0x8, 0x50, 0x308, 0x18 };
 
+static const uintptr_t gameTimeBaseOffset = 0x00D0FD08; // База совпадает с копами и авто
+static const unsigned int gameTimeOffsets[] = { 0x8, 0x8, 0x10, 0x628 };
+static const int gameTimeOffsetsCount = 4;
+
+// --- БЕЗОПАСНОЕ ЧТЕНИЕ ПАМЯТИ ---
 float SafeReadFloatChain(uintptr_t baseOffset, const unsigned int offsets[], int count) {
     uintptr_t hModule = (uintptr_t)GetModuleHandle(NULL);
     if (!hModule) return 0.0f;
@@ -55,13 +61,11 @@ int SafeReadIntChain(uintptr_t baseOffset, const unsigned int offsets[], int cou
     uintptr_t hModule = (uintptr_t)GetModuleHandle(NULL);
     if (!hModule) return 0;
 
-    // Читаем самый первый указатель из базы игры
     uintptr_t currentAddr = 0;
     if (!ReadProcessMemory(GetCurrentProcess(), (LPCVOID)(hModule + baseOffset), &currentAddr, sizeof(currentAddr), NULL)) {
         return 0;
     }
 
-    // Идем по цепочке указателей
     for (int i = 0; i < count - 1; i++) {
         if (currentAddr == 0) return 0;
 
@@ -70,10 +74,8 @@ int SafeReadIntChain(uintptr_t baseOffset, const unsigned int offsets[], int cou
         }
     }
 
-    // Прибавляем последнее смещение (ваш 0xB4)
     currentAddr += offsets[count - 1];
 
-    // Читаем ФИНАЛЬНОЕ числовое значение (очки погони)
     int finalValue = 0;
     if (ReadProcessMemory(GetCurrentProcess(), (LPCVOID)currentAddr, &finalValue, sizeof(finalValue), NULL)) {
         return finalValue;
@@ -82,10 +84,9 @@ int SafeReadIntChain(uintptr_t baseOffset, const unsigned int offsets[], int cou
     return 0;
 }
 
-// Превращаем ID из памяти игры в красивые названия
+// --- БАЗА ДАННЫХ МАШИН ---
 std::string GetCarNameByID(int carID) {
     switch (carID) {
-        // --- ОБЫЧНЫЕ МАШИНЫ ---
     case 1085698: return "Alfa Romeo 4C Concept";
     case 2196263: return "Alfa Romeo Mito QV";
     case 1160082: return "Ariel Atom 500 V8";
@@ -147,8 +148,6 @@ std::string GetCarNameByID(int carID) {
     case 1160350: return "SRT Viper GTR";
     case 122814:  return "Subaru Cosworth Impreza";
     case 1085764: return "Tesla Roadster Sport";
-
-        // --- SPECIAL / COPS ---
     case 1467242: return "SWAT Van";
     case 1399322: return "Dodge Charger SRT8";
     case 1467164: return "Ford Raptor (Pre-Order)";
@@ -161,27 +160,20 @@ std::string GetCarNameByID(int carID) {
     case 122706:  return "Dodge Charger SRT8 (Police)";
     case 122699:  return "Chevrolet Corvette Z06 (Police)";
     case 1399539: return "Ford Focus ST (Cops/Civilian)";
-
-        // --- UNIQUE VINYLS ---
     case 2277489: case 2277456: case 2277467: case 2277478: return "Lamborghini Diablo";
     case 2277252: return "BMW M3 GTR";
     case 2277210: case 2277224: case 2277238: return "BMW M3 Coupe";
     case 2255978: case 2255945: case 2255956: case 2255967: return "NISSAN 350Z";
     case 2255934: case 2255901: case 2255912: case 2255923: return "NISSAN SKYLINE GT-R (R34)";
     case 2277368: case 2277332: case 2277344: case 2277356: return "Porsche 911 GT2";
-
-        // --- TRAFFIC & REMOVED ---
     case 122816: case 122818: case 122819: case 122821: case 122822:
     case 122824: case 122827: case 122828: case 122829: case 122830:
     case 392322: case 1085448: case 1097663: case 1160687: case 1097968:
         return "kalduncar";
-
     default:
         if (carID > 0) return "kalduncar";
         wchar_t localeName[LOCALE_NAME_MAX_LENGTH];
         GetUserDefaultLocaleName(localeName, LOCALE_NAME_MAX_LENGTH);
-
-        // Проверяем строго первые два символа строки локали (например, 'r' и 'u' в "ru-RU")
         bool isRussian = (localeName[0] == L'r' && localeName[1] == L'u');
         return isRussian ? "11 маршруте" : "foot";
     }
@@ -193,36 +185,65 @@ void InitDiscord() {
     Discord_Initialize(APPLICATION_ID, &handlers, 1, NULL);
 }
 
+// --- ОСНОВНАЯ ФУНКЦИЯ ОБНОВЛЕНИЯ СТАТУСА ---
 void UpdatePresence() {
     wchar_t localeName[LOCALE_NAME_MAX_LENGTH];
     GetUserDefaultLocaleName(localeName, LOCALE_NAME_MAX_LENGTH);
 
-    // Проверяем строго первые два символа строки локали (например, 'r' и 'u' в "ru-RU")
     bool isRussian = (localeName[0] == L'r' && localeName[1] == L'u');
     int lobbyOffsetsCount = 1;
-    int scoreOffsetsCount = 7;
     int carIdOffsetsCount = 4;
 
-    // Читаем режим игры и очки погони через базовую рабочую функцию
+    // Читаем данные из игры
     int lobbyStatus = SafeReadIntChain(lobbyBaseOffset, lobbyOffsets, lobbyOffsetsCount);
     float rawHeat = SafeReadFloatChain(heatBaseOffset, heatOffsets, heatOffsetsCount);
+    // Читаем время вручную, чтобы точно применить отрицательный оффсет
+    float gameTime = 0.0f;
+    uintptr_t hModule = (uintptr_t)GetModuleHandle(NULL);
+    uintptr_t addr = 0;
 
-    // Читаем адрес структуры машины
+    // Идем по цепочке до предпоследнего оффсета (0x628)
+    if (ReadProcessMemory(GetCurrentProcess(), (LPCVOID)(hModule + 0x00D0FD08), &addr, sizeof(addr), NULL) && addr != 0) {
+        if (ReadProcessMemory(GetCurrentProcess(), (LPCVOID)(addr + 0x8), &addr, sizeof(addr), NULL) && addr != 0) {
+            if (ReadProcessMemory(GetCurrentProcess(), (LPCVOID)(addr + 0x8), &addr, sizeof(addr), NULL) && addr != 0) {
+                if (ReadProcessMemory(GetCurrentProcess(), (LPCVOID)(addr + 0x10), &addr, sizeof(addr), NULL) && addr != 0) {
+                    if (ReadProcessMemory(GetCurrentProcess(), (LPCVOID)(addr + 0x628), &addr, sizeof(addr), NULL) && addr != 0) {
+
+                        // ПРИМЕНЯЕМ ОТРИЦАТЕЛЬНЫЙ ОФФСЕТ
+                        uintptr_t finalTimeAddr = addr - 0x4D0954;
+                        ReadProcessMemory(GetCurrentProcess(), (LPCVOID)finalTimeAddr, &gameTime, sizeof(gameTime), NULL);
+                    }
+                }
+            }
+        }
+    }
+
+
+    // Читаем ID и имя машины
     uintptr_t carStructAddr = SafeReadIntChain(carIdBase, carIdOffsets, carIdOffsetsCount);
     int currentCarID = 0;
-
-    // Безопасно применяем отрицательный сдвиг -160A4, как в Cheat Engine
     if (carStructAddr != 0) {
         uintptr_t finalCarAddr = carStructAddr - 0x160A4;
         ReadProcessMemory(GetCurrentProcess(), (LPCVOID)finalCarAddr, &currentCarID, sizeof(currentCarID), NULL);
     }
-
     std::string carName = GetCarNameByID(currentCarID);
 
+    float fHours = (float)gameTime / 3600.0f;
+    int hours = (int)fHours % 24;
+
+    std::string timeOfDayText = "";
+    std::string timeImageKey = "512512";
+
+    // 2. Распределяем по сезонам
+    if (hours >= 6 && hours < 12)       timeOfDayText = isRussian ? "Утро" : "Morning";
+    else if (hours >= 12 && hours < 18) timeOfDayText = isRussian ? "День" : "Day";
+    else if (hours >= 18 && hours < 24) timeOfDayText = isRussian ? "Вечер" : "Evening";
+    else                                timeOfDayText = isRussian ? "Ночь" : "Night";
+
+    // Собираем структуру Discord Presence
     DiscordRichPresence discordPresence;
     memset(&discordPresence, 0, sizeof(discordPresence));
 
-    // 1. Установка режима игры
     switch (lobbyStatus) {
     case 1:  discordPresence.state = isRussian ? "В одиночной игре" : "Singleplayer"; break;
     case 2:  discordPresence.state = isRussian ? "В закрытом лобби" : "In Private Lobby"; break;
@@ -231,19 +252,13 @@ void UpdatePresence() {
     default: discordPresence.state = isRussian ? "Запуск..." : "Startup..."; break;
     }
 
-    discordPresence.largeImageKey = "512512";
+    discordPresence.largeImageKey = timeImageKey.c_str();
     discordPresence.startTimestamp = (int64_t)g_StartTime;
 
-    static std::string staticDetails;
-    static std::string staticLargeText;
-
-    // Читаем текущее дробное значение погони
-    rawHeat = SafeReadFloatChain(heatBaseOffset, heatOffsets, heatOffsetsCount);
+    // Рассчитываем уровень погони
     int heatLevel = 0;
-
-    // Переводим флоат в уровень розыска по твоей таблице Cheat Engine
     if (rawHeat >= 0.1f) {
-        if (rawHeat < 2.0f)        heatLevel = 1;
+        if (rawHeat < 2.0f)       heatLevel = 1;
         else if (rawHeat < 8.0f)   heatLevel = 2;
         else if (rawHeat < 16.0f)  heatLevel = 3;
         else if (rawHeat < 26.0f)  heatLevel = 4;
@@ -251,69 +266,51 @@ void UpdatePresence() {
         else                       heatLevel = 6;
     }
 
-    // ЛОГИКА ВЫВОДА В ДИСКОРД
+    static std::string staticDetails;
+    static std::string staticLargeText;
+
+    // Настраиваем вывод основных строк и ТЕКСТА КАРТИНКИ
     if (lobbyStatus == 1) { // Одиночная игра
         if (heatLevel > 0) {
-            // Если идет погоня (уровень больше 0)
-            if (isRussian) {
-                staticDetails = "В погоне (HEAT: " + std::to_string(heatLevel) + ") на " + carName;
-                staticLargeText = "Удирает от копов!";
-            }
-            else {
-                staticDetails = "In Pursuit (HEAT: " + std::to_string(heatLevel) + ") in " + carName;
-                staticLargeText = "Evading the cops!";
-            }
-            discordPresence.details = staticDetails.c_str();
-            discordPresence.largeImageText = staticLargeText.c_str();
+            staticDetails = isRussian ? "В погоне (HEAT: " + std::to_string(heatLevel) + ") на " + carName
+                : "In Pursuit (HEAT: " + std::to_string(heatLevel) + ") in " + carName;
         }
         else {
-            // Если погони нет (rawHeat == 0), плагин моментально вернет свободную езду!
-            if (isRussian) {
-                staticDetails = "Катается по городу на " + carName;
-                staticLargeText = "Fairhaven City";
-            }
-            else {
-                staticDetails = "Cruising Fairhaven in " + carName;
-                staticLargeText = "Fairhaven City";
-            }
+            staticDetails = isRussian ? "Катается по городу на " + carName
+                : "Cruising Fairhaven in " + carName;
         }
-        discordPresence.details = staticDetails.c_str();
-        discordPresence.largeImageText = staticLargeText.c_str();
+        // Для сингла при наведении пишем: "Fairhaven City - Утро"
+        staticLargeText = isRussian ? "Fairhaven City - " + timeOfDayText : "Fairhaven City - " + timeOfDayText;
     }
-    else if (lobbyStatus > 1) {
-        if (isRussian) {
-            staticDetails = "Покоряет онлайн-сессию на " + carName;
-            staticLargeText = "В сетевой сессии";
-        }
-        else {
-            staticDetails = "Dominating the online session in " + carName;
-            staticLargeText = "In Online Session";
-        }
-        discordPresence.details = staticDetails.c_str();
-        discordPresence.largeImageText = staticLargeText.c_str();
+    else if (lobbyStatus > 1) { // Онлайн-сессии
+        staticDetails = isRussian ? "Покоряет онлайн-сессию на " + carName
+            : "Dominating the online session in " + carName;
+        // Для онлайна при наведении пишем: "В сетевой сессии - Утро"
+        staticLargeText = isRussian ? "В сетевой сессии - " + timeOfDayText : "In Online Session - " + timeOfDayText;
     }
 
-    // Создаем статические переменные для отслеживания изменений HEAT, лобби и машины
+    discordPresence.details = staticDetails.c_str();
+    discordPresence.largeImageText = staticLargeText.c_str();
+
+    // Ограничение флуда в Дискорд
     static int lastHeat = -1;
     static int lastLobby = -1;
     static std::string lastCar = "";
+    static std::string lastTimeOfDay = "";
 
-    // Если изменился уровень копов, режим игры или машина — мгновенно обновляем Дискорд!
-    if (heatLevel != lastHeat || lobbyStatus != lastLobby || carName != lastCar) {
+    if (heatLevel != lastHeat || lobbyStatus != lastLobby || carName != lastCar || timeOfDayText != lastTimeOfDay) {
 
         Discord_UpdatePresence(&discordPresence);
 
-        // Запоминаем новые значения
         lastHeat = heatLevel;
         lastLobby = lobbyStatus;
         lastCar = carName;
+        lastTimeOfDay = timeOfDayText;
     }
 }
 
 DWORD WINAPI MainThread(LPVOID lpParam) {
     InitDiscord();
-
-    // Запускаем время через стабильный time(NULL)
     g_StartTime = time(NULL);
 
     while (true) {
